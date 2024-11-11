@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Local Leaflet CSS -->
+    <link rel="stylesheet" href="leaflet.css" />
+    <!-- Local Leaflet JS -->
+    <script src="leaflet.js"></script>
+    <!-- Local QWebChannel JS -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+
+    <style>
+        #map {
+            width: 100%;
+            height: 900px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        var map;
+        var backend;
+
+        var waypointCoords = [];
+        var waypointPolyline = null;
+
+
+        // Initialize the map
+        function initMap() {
+            map = L.map('map').setView([32.694, -117.238], 13);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('tiles/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+
+        }
+
+        // Function to update the polyline connecting waypoints
+        function updatePolyline() {
+            if (waypointPolyline) {
+                map.removeLayer(waypointPolyline);
+            }
+            waypointPolyline = L.polyline(waypointCoords, { 
+                color: 'black',
+                dashArray: '5, 10' 
+            }).addTo(map);
+        }
+
+
+
+        // Set up QWebChannel for communication with Python
+        function setupChannel() {
+            new QWebChannel(qt.webChannelTransport, function(channel) {
+                backend = channel.objects.backend;
+                initMap();
+
+                // Handle data from Python
+                backend.datatohtml.connect(function(message) {
+                    var coords = parseCoordinates(message);
+                    placeMarker(coords.lat, coords.lon);
+                });
+
+                // Handle clear waypoints signal
+                backend.clear_waypoints.connect(function() {
+                    clearWaypoints();
+                });
+            });
+        }
+
+;
+    </script>
+</body>
+</html>
